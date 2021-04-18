@@ -19,7 +19,7 @@ typedef unsigned iterations;
 
 
 /* Maximum number of iterations allowed in jacobi() */
-static unsigned long jacobi_max_iterations = 3;
+static unsigned long jacobi_max_iterations = 500;
 
 using namespace std;
 
@@ -156,23 +156,47 @@ void readImage(string, ImageType &);
 void writeImage(string, ImageType &);
 
 vector<double> getReferenceImageMatrix(string);
+void displayMatrix(vector<vector<double>> matrix) {
+    cout << endl << "size: " << matrix.size() << endl;
+
+    for (vector<double> vector :  matrix) {
 
 
-int main(int argc, char *argv[]) {
+        for (double j :  vector) {
 
-    int M, N, Q;
-    bool type;
-    vector<string> file_list = listFile();
+            cout << j << " ";
+
+        }
+        cout << " \n";
+    }
+}
+
+void displayMatrix(vector<double> vector) {
+    cout << endl << "size: " << vector.size() << endl;
+    for (double j :  vector) {
+
+        cout << j << " ";
+
+    }
+    cout << " \n";
+}
+vector<vector<double>> getX() {
     vector<vector<double>> images;
-    vector<double> mean;
-    int k = 2;
+    vector<string> file_list = listFile();
+    int k = 1;
     for (string fn :  file_list) {
         vector<double> ref_image = getReferenceImageMatrix(fn);
         images.push_back(ref_image);
-       /* k--;
+        k--;
         if (k < 0)
-            break;*/
+            break;
     }
+    return images;
+}
+
+vector<double> getMean(vector<vector<double>> images, int sample_size) {
+
+    vector<double> mean;
 
     for (vector<double> samples :  images) {
 
@@ -182,18 +206,13 @@ int main(int argc, char *argv[]) {
             std::transform(mean.begin(), mean.end(), samples.begin(), mean.begin(), std::plus<double>());
     }
 
-    int sample_size = images.size();
-    int image_size = mean.size();
-    cout << image_size;
+
     std::transform(mean.begin(), mean.end(), mean.begin(),
                    [sample_size](double c) { return (double) c / (double) sample_size; });
+    return mean;
+}
 
-    vector<vector<double>> A;
-    for (vector<double> samples :  images) {
-        std::transform(samples.begin(), samples.end(), mean.begin(), samples.begin(), std::minus<double>());
-        A.push_back(samples);
-    }
-
+vector<vector<double> > getCovairiance(vector<vector<double>> A, int sample_size, int image_size) {
     vector<vector<double> > AT(A[0].size(), vector<double>());
 
     for (int i = 0; i < A.size(); i++) {
@@ -201,7 +220,7 @@ int main(int argc, char *argv[]) {
             AT[j].push_back(A[i][j]);
         }
     }
-
+    displayMatrix(AT);
     pair<int, int> dimen1 = {sample_size, image_size};
     pair<int, int> dimen2 = {image_size, sample_size};
     vector<vector<double> > mul;
@@ -214,81 +233,137 @@ int main(int argc, char *argv[]) {
                 mul[i][j] += A[i][k]
                              * (AT[k][j]);
             }
-            mul[i][j]=mul[i][j]/sample_size;
+            mul[i][j] = mul[i][j] / sample_size;
         }
     }
+    return mul;
+}
+template<typename T>
+struct square
+{
+    T operator()(const T& Left, const T& Right) const
+    {
+        return (Left + Right*Right);
+    }
+};
+void normalize(vector<vector<double>> &A) {
+    std::for_each(std::begin(A), std::end(A),
+                  [](vector<double> (&row)) {
+                      double sum = std::accumulate(std::begin(row), std::end(row), 0.0,square<double>());
+                      std::transform(std::begin(row), std::end(row), std::begin(row),
+                                     [sum](double x) { return x / sum; });
+                  });
+}
 
-//    std::transform(mul.begin(), mul.end(), mul.begin(),[sample_size](double c) { return (double) c / (double) sample_size; });
+vector<vector<double>> getrealEigenVectors(vector<vector<double>> A,vector<vector<double>> V, int sample_size, int image_size)
+{
+    vector<vector<double> > AT(A[0].size(), vector<double>());
 
-    cout << endl << sample_size << endl;
-    vector<double> w;
-    vector<vector<double>> V;
-    int adj_size = sample_size + 1;
-    w.resize(adj_size);
-    V.resize(adj_size);
-    for (int i = 1; i <= sample_size; i++)
-        V[i].resize(adj_size);
+    for (int i = 0; i < A.size(); i++) {
+        for (int j = 0; j < A[i].size(); j++) {
+            AT[j].push_back(A[i][j]);
+        }
+    }
+    pair<int, int> dimen1 = {image_size,sample_size  };
+    pair<int, int> dimen2 = {sample_size, sample_size};
+    vector<vector<double> > mul;
+    cout << AT.size() << " " << AT[0].size() << endl;
+    cout <<sample_size << " " <<image_size << endl;
+    cout << V.size() << " " << V[1].size() << endl;
+    mul.resize(dimen1.first);
+    for (int i = 0; i < dimen1.first; i++) {
+        mul[i].resize(dimen2.second);
+        for (int j = 0; j < dimen2.second; j++) {
+            mul[i][j] = 0;
+            cout << AT[i][j] << " ";
+            for (int k = 0; k < dimen2.first; k++) {
+                mul[i][j] += AT[i][k]
+                             * (V[k+1][j+1]);
+            }
+            //mul[i][j] = mul[i][j] / sample_size;
+        }
+    }
+    cout << "why?";
+   // normalize(mul);
+    return mul;
+}
+vector<vector<double> > getEigenfaces(vector<vector<double>> U,vector<vector<double>> X, int sample_size, int image_size,int eigensize) {
+    vector<vector<double> > UT(U[0].size(), vector<double>());
 
-     jacobi2(mul, sample_size, w, V);
-
-    /* cout << endl << V.size() << endl;*/
-
-   /* for (vector<double> samples :  images) {
-
-
-        for (double j :  samples) {
-
-            cout << j << " ";
+    for (int i = 0; i < U.size(); i++) {
+        for (int j = 0; j < U[i].size(); j++) {
+            UT[j].push_back(U[i][j]);
+        }
+    }
+    displayMatrix(U);
+    pair<int, int> dimen1 = {eigensize,sample_size};
+    pair<int, int> dimen2 = {sample_size, image_size};
+    vector<vector<double> > mul;
+    mul.resize(dimen1.first);
+    for (int i = 0; i < dimen1.first; i++) {
+        mul[i].resize(dimen2.second);
+        for (int j = 0; j < dimen2.second; j++) {
+            mul[i][j] = 0;
+            for (int k = 0; k < dimen2.first; k++) {
+                mul[i][j] += U[i][k]
+                             * (X[k][j]);
+            }
 
         }
-        cout << "S \n";
     }
-    for (double j :  mean) { cout << j << " "; }
-    cout << "Meam \n";
+    return mul;
+}
+int main(int argc, char *argv[]) {
 
-    for (vector<double> samples :  A) {
+    // get x
+    vector<vector<double>> images = getX();
+    int sample_size = images.size();
+    cout << sample_size;
+    displayMatrix(images);
+    //get Mean
+    vector<double> mean = getMean(images, sample_size);
+    int image_size = mean.size();
+    cout << image_size;
+    displayMatrix(mean);
+    // get A
+    vector<vector<double>> A;
+    for (vector<double> samples :  images) {
+        std::transform(samples.begin(), samples.end(), mean.begin(), samples.begin(), std::minus<double>());
+        A.push_back(samples);
+    }
+    displayMatrix(A);
+// get coviance
+    vector<vector<double> > mul = getCovairiance(A, sample_size, image_size);
+    displayMatrix(mul);
 
-        for (double j :  samples) {
+    //cout << endl << sample_size << endl;
+     vector<double> w;
+     vector<vector<double>> V;
+     int adj_size = sample_size + 1;
+     w.resize(adj_size);
+     V.resize(adj_size);
+     for (int i = 1; i <= sample_size; i++)
+         V[i].resize(adj_size);
 
-            cout << j << " ";
 
+    jacobi2(mul, sample_size, w, V);
+
+    displayMatrix(V);
+
+    vector<vector<double>> realEigenVectors = getrealEigenVectors(A,V,sample_size,image_size);
+
+    displayMatrix(realEigenVectors);
+
+    vector<vector<double> > eigenfaces = getEigenfaces(realEigenVectors,images,sample_size,image_size,1);
+
+    displayMatrix(eigenfaces);
+    int N = 20, M = 16;
+    ImageType image(N, M, 255);
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < M; j++) {
+            image.setPixelVal(i, j, eigenfaces[0][i * M + j]);
         }
-        cout << "A \n";
-    }
-
-    for (vector<double> samples :  AT) {
-
-
-        for (double j :  samples) {
-
-            cout << j << " ";
-
-        }
-        cout << "AT \n";
-
-
-    }
-
-    for (vector<double> sampl :  mul) {
-        for (double j :  sampl) {
-            cout << j << " ";
-        }
-        cout << "covariance \n";
-    }
-    cout << mul.size() << endl;
-    for (vector<double> sampl :  V) {
-        for (double j :  sampl) {
-            cout << j << " ";
-        }
-        cout << "V \n";
-    }
-*/
-    for (double j :  w) {
-
-        cout << j << " ";
-
-    }
-    cout << "lamda \n";
+    writeImage("mean.pgm", image);
     return 0;
 }
 
@@ -303,6 +378,7 @@ vector<double> getReferenceImageMatrix(string sample_file) {
     readImage(sample_file, Simage);
     /*SM = 2;
     SN = 2;*/
+    // cout << SN<<","<< SM<<endl;
     vector<double> ref;
     for (int i = 0; i < SN; i++)
         for (int j = 0; j < SM; j++) {
