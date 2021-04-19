@@ -183,7 +183,7 @@ void displayMatrix(vector<double> vector) {
 vector<vector<double>> getX() {
     vector<vector<double>> images;
     vector<string> file_list = listFile();
-    int k = 1;
+    int k = 300;
     for (string fn :  file_list) {
         vector<double> ref_image = getReferenceImageMatrix(fn);
         images.push_back(ref_image);
@@ -220,7 +220,7 @@ vector<vector<double> > getCovairiance(vector<vector<double>> A, int sample_size
             AT[j].push_back(A[i][j]);
         }
     }
-    displayMatrix(AT);
+    //displayMatrix(AT);
     pair<int, int> dimen1 = {sample_size, image_size};
     pair<int, int> dimen2 = {image_size, sample_size};
     vector<vector<double> > mul;
@@ -243,15 +243,16 @@ struct square
 {
     T operator()(const T& Left, const T& Right) const
     {
-        return (Left + Right*Right);
+        return (Left+ Right*Right  );
+        //fabs(
     }
 };
 void normalize(vector<vector<double>> &A) {
     std::for_each(std::begin(A), std::end(A),
                   [](vector<double> (&row)) {
-                      double sum = std::accumulate(std::begin(row), std::end(row), 0.0,square<double>());
+                      double sum=std::accumulate(std::begin(row), std::end(row), 0.0,square<double>());
                       std::transform(std::begin(row), std::end(row), std::begin(row),
-                                     [sum](double x) { return x / sum; });
+                                     [sum](double x) { return  x/pow(sum,0.5); });
                   });
 }
 
@@ -267,15 +268,15 @@ vector<vector<double>> getrealEigenVectors(vector<vector<double>> A,vector<vecto
     pair<int, int> dimen1 = {image_size,sample_size  };
     pair<int, int> dimen2 = {sample_size, sample_size};
     vector<vector<double> > mul;
-    cout << AT.size() << " " << AT[0].size() << endl;
+    /*cout << AT.size() << " " << AT[0].size() << endl;
     cout <<sample_size << " " <<image_size << endl;
-    cout << V.size() << " " << V[1].size() << endl;
+    cout << V.size() << " " << V[1].size() << endl;*/
     mul.resize(dimen1.first);
     for (int i = 0; i < dimen1.first; i++) {
         mul[i].resize(dimen2.second);
         for (int j = 0; j < dimen2.second; j++) {
             mul[i][j] = 0;
-            cout << AT[i][j] << " ";
+            //cout << AT[i][j] << " ";
             for (int k = 0; k < dimen2.first; k++) {
                 mul[i][j] += AT[i][k]
                              * (V[k+1][j+1]);
@@ -283,8 +284,9 @@ vector<vector<double>> getrealEigenVectors(vector<vector<double>> A,vector<vecto
             //mul[i][j] = mul[i][j] / sample_size;
         }
     }
-    cout << "why?";
-   // normalize(mul);
+   // displayMatrix(mul);
+    //cout << "why?";
+    normalize(mul);
     return mul;
 }
 vector<vector<double> > getEigenfaces(vector<vector<double>> U,vector<vector<double>> X, int sample_size, int image_size,int eigensize) {
@@ -295,7 +297,7 @@ vector<vector<double> > getEigenfaces(vector<vector<double>> U,vector<vector<dou
             UT[j].push_back(U[i][j]);
         }
     }
-    displayMatrix(U);
+   // displayMatrix(U);
     pair<int, int> dimen1 = {eigensize,sample_size};
     pair<int, int> dimen2 = {sample_size, image_size};
     vector<vector<double> > mul;
@@ -319,22 +321,22 @@ int main(int argc, char *argv[]) {
     vector<vector<double>> images = getX();
     int sample_size = images.size();
     cout << sample_size;
-    displayMatrix(images);
+    //displayMatrix(images);
     //get Mean
     vector<double> mean = getMean(images, sample_size);
     int image_size = mean.size();
     cout << image_size;
-    displayMatrix(mean);
+    //displayMatrix(mean);
     // get A
     vector<vector<double>> A;
     for (vector<double> samples :  images) {
         std::transform(samples.begin(), samples.end(), mean.begin(), samples.begin(), std::minus<double>());
         A.push_back(samples);
     }
-    displayMatrix(A);
+    //displayMatrix(A);
 // get coviance
     vector<vector<double> > mul = getCovairiance(A, sample_size, image_size);
-    displayMatrix(mul);
+   // displayMatrix(mul);
 
     //cout << endl << sample_size << endl;
      vector<double> w;
@@ -348,22 +350,27 @@ int main(int argc, char *argv[]) {
 
     jacobi2(mul, sample_size, w, V);
 
-    displayMatrix(V);
+    //displayMatrix(V);
 
     vector<vector<double>> realEigenVectors = getrealEigenVectors(A,V,sample_size,image_size);
 
-    displayMatrix(realEigenVectors);
+    //displayMatrix(realEigenVectors);
 
-    vector<vector<double> > eigenfaces = getEigenfaces(realEigenVectors,images,sample_size,image_size,1);
+    vector<vector<double> > eigenfaces = getEigenfaces(realEigenVectors,images,sample_size,image_size,10);
 
-    displayMatrix(eigenfaces);
+    //displayMatrix(eigenfaces);
     int N = 20, M = 16;
+    int fcno=0;
+    for( vector<double> eg : eigenfaces){
+        fcno++;
     ImageType image(N, M, 255);
     for (int i = 0; i < N; i++)
         for (int j = 0; j < M; j++) {
-            image.setPixelVal(i, j, eigenfaces[0][i * M + j]);
+            image.setPixelVal(i, j,eg[i * M + j]);
         }
-    writeImage("mean.pgm", image);
+    string filename=to_string(fcno)+string("eigenfaces.pgm");
+    writeImage( filename , image);
+    }
     return 0;
 }
 
@@ -376,8 +383,8 @@ vector<double> getReferenceImageMatrix(string sample_file) {
     ImageType Simage(SN, SM, SQ);
     // read image
     readImage(sample_file, Simage);
-    /*SM = 2;
-    SN = 2;*/
+    /*SM = 10;
+    SN = 1;*/
     // cout << SN<<","<< SM<<endl;
     vector<double> ref;
     for (int i = 0; i < SN; i++)
