@@ -5,7 +5,8 @@
 #ifndef DIMENRED_JACOBI_H
 #define DIMENRED_JACOBI_H
 
-
+#include "bits/stdc++.h"
+using namespace std;
 typedef unsigned dimension;
 
 int jacobi2(vector<vector<double>> zas, dimension n, vector<double> &w, vector<vector<double>> &V);

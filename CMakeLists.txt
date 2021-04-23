@@ -3,4 +3,4 @@ project(dimenRed)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(dimenRed image.h image.cpp  ReadImage.cpp ReadImageHeader.cpp WriteImage.cpp Threshold.cpp  MatricOP.h DiscriminantCases.h jacobi.h jacobi.cpp)
+add_executable(dimenRed image.h image.cpp  ReadImage.cpp ReadImageHeader.cpp WriteImage.cpp Threshold.cpp jacobi.h jacobi.cpp lamdafunctions.h matrixfunctions.cpp matrixOperations.cpp matrixOperations.h matrixfunctions.h)
