@@ -91,6 +91,7 @@ int testing(vector<double> mean, vector<vector<double> > eigespace, vector<doubl
         //cout << file_list[min_dis.first] << " <> " << file_list2[iop] << endl;
         iop++;
     }
+    //check
     cout << "TP : " << TP << " TN : " << TN << endl;
     return 0;
 }
