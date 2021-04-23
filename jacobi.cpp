@@ -1,24 +1,8 @@
-#include <iostream>
-
-
-
-
-/* JACOBI.C  module
-
-   NOTES: The jacobi() function is a modified version of the one found in
-          'Numerical Recipes in C'.
-
-
-
-*/
-
-
-
 #include <math.h>
-#include <stdio.h>
 #include <vector>
 
 
+using namespace std;
 typedef unsigned dimension;
 typedef unsigned iterations;
 #define ROTATE(S, i, j, k, l) g=S[i][j];h=S[k][l];S[i][j]=g-s*(h+g*tau); \
@@ -28,22 +12,7 @@ typedef unsigned iterations;
 /* Maximum number of iterations allowed in jacobi() */
 static unsigned long jacobi_max_iterations = 500;
 
-using namespace std;
-
-int printsol(dimension n, vector<double> w, vector<vector<double>> V) {
-
-    for (int l = 1; l <= n; l++) {
-        for (int m = 1; m <= n; m++)
-            cout << V[l][m] << " ";
-        cout << endl;
-    }
-
-    for (int m = 1; m <= n; m++)
-        cout << w[m] << endl;
-    return 0;
-}
-
-int jacobi(vector<vector<double>> zas, dimension n, vector<double> &w, vector<vector<double>> &V) {
+int jacobi2(vector<vector<double>> zas, dimension n, vector<double> &w, vector<vector<double>> &V) {
     iterations i, j, k, iq, ip;
     double tresh, theta, tau, t, sm, s, h, g, c;
     double p;
@@ -148,46 +117,4 @@ int jacobi(vector<vector<double>> zas, dimension n, vector<double> &w, vector<ve
         }
     }
     return (-1);
-}
-
-int mainjl() {
-
-   /* vector<vector<double>> zas = {{420.222,  694.556,  -1114.78},
-                                  {694.556,  1154.89,  -1849.44},
-                                  {-1114.78, -1849.44, 2964.22}};
-
-    vector<double> w;
-    vector<vector<double>> V;
-    int n = 3;
-    int  ad=n+1;
-    iterations i, j;
-
-    w.resize(ad);
-    V.resize(ad);
-    for (i = 1; i <= n; i++)
-        V[i].resize(ad);
-
-    for (int l = 0; l < n; l++) {
-        for (int m = 0; m < n; m++)
-            cout << zas[l][m] << " ";
-        cout << endl;
-    }
-    printsol(n, w, V);
-    jacobi(zas, n, w, V);*/
-
-   int sample_size=3;
-    vector<double> w;
-    vector<vector<double>> V;
-    int adj_size = sample_size + 1;
-    w.resize(adj_size);
-    V.resize(adj_size);
-    for (int i = 1; i <= sample_size; i++)
-        V[i].resize(adj_size);
-    vector<vector<double>> zas = {{420.222,  694.556,  -1114.78},
-                                  {694.556,  1154.89,  -1849.44},
-                                  {-1114.78, -1849.44, 2964.22}};
-
-    jacobi(zas, sample_size, w, V);
-    printsol(sample_size, w, V);
-    return 0;
 }

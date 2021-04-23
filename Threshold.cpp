@@ -6,15 +6,9 @@
 #include<string.h>
 #include<sstream>
 #include<dirent.h>
-
-typedef unsigned dimension;
-typedef unsigned iterations;
-#define ROTATE(S, i, j, k, l) g=S[i][j];h=S[k][l];S[i][j]=g-s*(h+g*tau); \
-              S[k][l]=h+s*(g-h*tau)
+#include "jacobi.h"
 
 
-/* Maximum number of iterations allowed in jacobi() */
-static unsigned long jacobi_max_iterations = 500;
 
 using namespace std;
 using namespace std::chrono;
@@ -25,22 +19,21 @@ void readImage(string, ImageType &);
 
 void writeImage(string, ImageType &);
 
-
 void displayMatrix(vector<double> vector);
 
 void displayMatrix(vector<vector<double>> matrix);
 
 vector<double> getReferenceImageMatrix(string sample_file);
 
-vector<string> listFile();
+vector<string> listFile(string);
 
-vector<vector<double>> getX();
+vector<vector<double>> getX(string direc);
 
 vector<double> getMean(vector<vector<double>> images, int sample_size);
 
 vector<vector<double> > getCovairiance(vector<vector<double>> A, int sample_size, int image_size);
 
-int jacobi2(vector<vector<double>> zas, dimension n, vector<double> &w, vector<vector<double>> &V);
+
 
 vector<vector<double>>
 getrealEigenVectors(vector<vector<double>> A, vector<vector<double>> V, int sample_size, int image_size);
@@ -57,7 +50,8 @@ void writeImages(vector<double> meanfaces);
 void vitualization(vector<vector<double>> &A);
 
 int training();
-int testing(vector<double> mean, vector<vector<double> > eigespace, vector<double> X, vector<double> w,
+
+int testing(vector<double> mean, vector<vector<double> > eigespace, vector<double> w,
             vector<vector<double> > U);
 
 int main(int argc, char *argv[]) {
@@ -68,60 +62,67 @@ int main(int argc, char *argv[]) {
 }
 
 template<typename T>
-struct Mahalanobis {
-    T operator()(const T &Left, const T &Right) const {
-        return (Left / pow(Right, 0.5));
+struct findimageId {
+    T operator()( const T &Right) const {
+        int pos = Right.find("/");
+        return ( Right.substr(pos + 1,5));
     }
 };
-
-int testing(vector<double> mean, vector<vector<double> > eigespace, vector<double> Y, vector<double> w,
+int testing(vector<double> mean, vector<vector<double> > eigespace, vector<double> w,
             vector<vector<double> > U) {
 
-    vector<double> X = getReferenceImageMatrix("fb_l/00019_940422_fb.pgm");
-    vector<vector<double> > test;
-    // test.resize(1);
-    vector<double> testvalue;
-    testvalue.resize(X.size());
-    // displayMatrix(test);
-    std::transform(X.begin(), X.end(), mean.begin(), testvalue.begin(), std::minus<double>());
-    //displayMatrix(testvalue);
-    test.push_back(testvalue);
-   // displayMatrix(test);
-    vector<double> testvalueP = test[0];
-   // vector<double> testvalueP = eigespace[60];
+    vector<string> file_list = listFile("fa_L");
+    vector<string> file_list2 = listFile("fb_L");
+    std::transform(file_list2.begin(), file_list2.end(), file_list2.begin(), findimageId<string>());
+    std::transform(file_list.begin(), file_list.end(), file_list.begin(), findimageId<string>());
 
-    vector<vector<double> > omega = getEigenspace(U, test, 1, 320, 10);
+    vector<vector<double>> testImages = getX("fb_L");
+    int image_size = eigespace[0].size();
+    int galery_size = eigespace.size();
+    cout << galery_size << endl;
 
-    int image_size=eigespace[0].size();
+    int iop = 0;
 
-    pair<int,double> min_dis={0,999999};
-   // cout <<image_size <<endl;
-    for (int i=0 ;i < eigespace.size() ; i ++) {
+    int TP=0,TN=0;
 
-        double Mahalanobis_distance =0;
-        for(int j=0 ;j < image_size ; j ++){
+    for (vector<double> X : testImages) {
+//        vector<double> X = getReferenceImageMatrix("fb_l/00019_940422_fb.pgm");
+        vector<vector<double> > test;
+        vector<double> testvalue;
+        testvalue.resize(X.size());
+        std::transform(X.begin(), X.end(), mean.begin(), testvalue.begin(), std::minus<double>());
+        test.push_back(testvalue);
+        vector<vector<double> > omega = getEigenspace(U, test, 1, 320, 50);
+        pair<int, double> min_dis = {0, 999999};
 
-            Mahalanobis_distance = pow(eigespace[i][j]-omega[0][j],2) /*/ w[i+1]*/;
+        for (int i = 0; i < galery_size; i++) {
+            double Mahalanobis_distance = 0;
+            for (int j = 0; j < image_size; j++) {
+                Mahalanobis_distance = pow(eigespace[i][j] - omega[0][j], 2) / w[i + 1];
+            }
+            if (min_dis.second > Mahalanobis_distance)
+                min_dis = {i, Mahalanobis_distance};
         }
-        //cout << i <<","<< Mahalanobis_distance << endl;
-        if(min_dis.second > Mahalanobis_distance)
-            min_dis={i,Mahalanobis_distance};
 
+        if(file_list[min_dis.first] == file_list2[iop])
+            TP++;
+        else
+            TN++;
+        //cout << min_dis.first + 1 << " with " << min_dis.second << endl;
 
-
+        //cout << file_list[min_dis.first] << " <> " << file_list2[iop] << endl;
+        iop++;
     }
-
-cout<< min_dis.first+1<< " with "<< min_dis.second<<endl;
-    vector<string> file_list = listFile();
-    cout << file_list[min_dis.first] ;
+    cout <<"TP : " << TP << " TN : " << TN << endl;
     return 0;
 }
 
 int training() {
 
-    vector<vector<double>> images = getX();
+    vector<vector<double>> images = getX("fa_L");
     int sample_size = images.size();
     cout << sample_size;
+
     //displayMatrix(images);
     //get Mean
     vector<double> mean = getMean(images, sample_size);
@@ -162,9 +163,6 @@ int training() {
     vector<vector<double>> U = getrealEigenVectors(A, V, sample_size, image_size);
     //displayMatrix(realEigenVectors);
     // int Kvalue = image_size;
-    int Kvalue = 10;
-    vector<vector<double> > eigespace = getEigenspace(U, A, sample_size, image_size, Kvalue);
-
     vector<vector<double> > UT(U[0].size(), vector<double>());
     for (int i = 0; i < U.size(); i++) {
         for (int j = 0; j < U[i].size(); j++) {
@@ -172,14 +170,17 @@ int training() {
         }
     }
     // //displayMatrix(U);
-
+    cout << UT.size() << " " << UT[0].size() << endl;
 
     //displayMatrix(eigenfaces);
     /*writeImages(mean);
     vitualization(UT);
     writeImages(UT);*/
 
-    testing(mean, eigespace, images[120], w, U);
+
+    int Kvalue = 50;
+    vector<vector<double> > eigespace = getEigenspace(U, A, sample_size, image_size, Kvalue);
+    testing(mean, eigespace, w, U);
 
     return 0;
 }
@@ -236,10 +237,10 @@ vector<double> getReferenceImageMatrix(string sample_file) {
 }
 
 
-vector<vector<double>> getX() {
+vector<vector<double>> getX(string direc) {
     vector<vector<double>> images;
-    vector<string> file_list = listFile();
-    int k = 700;
+    vector<string> file_list = listFile(direc);
+    int k = 199;
     for (string fn :  file_list) {
         vector<double> ref_image = getReferenceImageMatrix(fn);
         images.push_back(ref_image);
@@ -382,7 +383,27 @@ getEigenspace(vector<vector<double>> U, vector<vector<double>> X, int sample_siz
     return mul;
 }
 
-
+void write_sol_file(vector<vector<double>> matrix){
+    ofstream myfile ("advertise_pb_out.txt");
+    if (myfile.is_open())
+    {for (vector<double> vector :  matrix) {
+            for (double j :  vector) {
+                cout << j << ",";
+            }
+            cout << " \n";}
+        myfile.close();
+    }
+}
+void write_sol_file(vector<double> vector) {
+    ofstream myfile ("mean.csv");
+    if (myfile.is_open())
+    {
+    for (double j :  vector) {
+        cout << j << ",";
+    }
+    cout << " \n";
+    }
+}
 void displayMatrix(vector<vector<double>> matrix) {
     cout << endl << "size: " << matrix.size() << endl;
 
@@ -408,128 +429,25 @@ void displayMatrix(vector<double> vector) {
     cout << " \n";
 }
 
-vector<string> listFile() {
+vector<string> listFile(string direc) {
     ifstream inn;
     DIR *pDIR;
     vector<string> file_list;
     struct dirent *entry;
-    if (pDIR = opendir("./fa_L")) {
+    string path = "./" + direc;
+    char *c = strcpy(new char[path.length() + 1], path.c_str());
+
+    if (pDIR = opendir(c)) {
         while (entry = readdir(pDIR)) {
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
                 string str(entry->d_name);
-                file_list.emplace_back("fa_L/" + str);
+                file_list.emplace_back(direc + "/" + str);
             }
 
         }
         closedir(pDIR);
     }
+
     return file_list;
 
-}
-
-int jacobi2(vector<vector<double>> zas, dimension n, vector<double> &w, vector<vector<double>> &V) {
-    iterations i, j, k, iq, ip;
-    double tresh, theta, tau, t, sm, s, h, g, c;
-    double p;
-    int nrot;
-    vector<double> b, z;
-    int m = n + 1;
-    b.resize(m);
-    z.resize(m);
-    vector<vector<double>> S;
-    S.resize(m);
-    for (i = 1; i <= n; i++) {
-        S[i].resize(m);
-        for (j = 1; j <= n; j++) {
-            S[i][j] = zas[i - 1][j - 1];
-        }
-    }
-    for (ip = 1; ip <= n; ip++) {
-        for (iq = 1; iq <= n; iq++)
-            V[ip][iq] = 0.0;
-        V[ip][ip] = 1.0;
-    }
-
-    for (ip = 1; ip <= n; ip++) {
-        b[ip] = w[ip] = S[ip][ip];
-        z[ip] = 0.0;
-    }
-
-    nrot = 0;
-
-    for (i = 1; i <= jacobi_max_iterations; i++) {
-        sm = 0.0;
-        for (ip = 1; ip <= n - 1; ip++) {
-            for (iq = ip + 1; iq <= n; iq++) {
-                sm += fabs(S[ip][iq]);
-            }
-        }
-        if (sm == 0.0) {
-            for (i = 1; i < n; i++) {
-                p = w[k = i];
-                for (j = i + 1; j <= n; j++) if (w[j] >= p) p = w[k = j];
-                if (k != i) {
-                    w[k] = w[i];
-                    w[i] = p;
-                    for (j = 1; j <= n; j++) {
-                        p = V[j][i];
-                        V[j][i] = V[j][k];
-                        V[j][k] = p;
-                    }
-                }
-            }
-
-
-            for (i = 2; i <= n; i++) {
-                for (j = 1; j < i; j++) S[j][i] = S[i][j];
-            }
-            return (nrot);
-        }
-        if (i < 4) tresh = 0.2 * sm / (n * n); else tresh = 0.0;
-        for (ip = 1; ip <= n - 1; ip++) {
-            for (iq = ip + 1; iq <= n; iq++) {
-                g = 100.0 * fabs(S[ip][iq]);
-                if (i > 4 && fabs(w[ip]) + g == fabs(w[ip]) && fabs(w[iq]) + g == fabs(w[iq]))
-                    S[ip][iq] = 0.0;
-                else if (fabs(S[ip][iq]) > tresh) {
-                    h = w[iq] - w[ip];
-                    if (fabs(h) + g == fabs(h))
-                        t = (S[ip][iq]) / h;
-                    else {
-                        theta = 0.5 * h / (S[ip][iq]);
-                        t = 1.0 / (fabs(theta) + sqrt(1.0 + theta * theta));
-                        if (theta < 0.0) t = -t;
-                    }
-                    c = 1.0 / sqrt(1 + t * t);
-                    s = t * c;
-                    tau = s / (1.0 + c);
-                    h = t * S[ip][iq];
-                    z[ip] -= h;
-                    z[iq] += h;
-                    w[ip] -= h;
-                    w[iq] += h;
-                    S[ip][iq] = 0.0;
-                    for (j = 1; j <= ip - 1; j++) {
-                        ROTATE(S, j, ip, j, iq);
-                    }
-                    for (j = ip + 1; j <= iq - 1; j++) {
-                        ROTATE(S, ip, j, j, iq);
-                    }
-                    for (j = iq + 1; j <= n; j++) {
-                        ROTATE(S, ip, j, iq, j);
-                    }
-                    for (j = 1; j <= n; j++) {
-                        ROTATE(V, j, ip, j, iq);
-                    }
-                    ++nrot;
-                }
-            }
-        }
-        for (ip = 1; ip <= n; ip++) {
-            b[ip] += z[ip];
-            w[ip] = b[ip];
-            z[ip] = 0.0;
-        }
-    }
-    return (-1);
 }
