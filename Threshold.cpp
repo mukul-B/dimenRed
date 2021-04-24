@@ -152,8 +152,23 @@ int training() {
     /*writeImages(mean);
     vitualization(UT);
     writeImages(UT);*/
-    int Kvalue = 190;
-    vector<vector<double> > eigespace = getEigenspace(U, A, sample_size, image_size, Kvalue);
+    int kValue;
+    double eigenSum = 0;
+    double totalEigenSum = 0;
+    for (int i = 0; i < sample_size; i++) {
+        totalEigenSum += U[i][i];
+    }
+
+    for (int i = 0; i < sample_size; i++) {
+        if ((eigenSum/totalEigenSum) > 0.9) {
+            kValue = i-1;
+            break;
+        } else {
+            eigenSum += U[i][i];
+        }
+    }
+
+    vector<vector<double> > eigespace = getEigenspace(U, A, sample_size, image_size, kValue);
     testing(mean, eigespace, w, U);
     return 0;
 }
