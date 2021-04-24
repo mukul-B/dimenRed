@@ -15,12 +15,22 @@ int testing(vector<double> mean, vector<vector<double> > eigespace, vector<doubl
 
 int main(int argc, char *argv[]) {
     training();
+
     return 0;
 }
 
 
 int testing(vector<double> mean, vector<vector<double> > eigespace, vector<double> w,
-            vector<vector<double> > U) {
+            vector<vector<double> > U, int kValue) {
+
+    vector<vector<double>> test2;
+    test2 = readOmega("training/omega.csv");
+    cout << "Reading done" << endl;
+    for (int i = 0; i < test2.size(); i++) {
+        for (int j = 0; j < test2[i].size(); j++) {
+            cout << test2[i][0] << test2[i][1] << test2[i][2] << test2[i][3] << test2[i][4] << endl;
+        }
+    }
 
     vector<string> file_list = listFile("fa_L");
     vector<string> file_list2 = listFile("fb_L");
@@ -43,7 +53,7 @@ int testing(vector<double> mean, vector<vector<double> > eigespace, vector<doubl
         testvalue.resize(X.size());
         std::transform(X.begin(), X.end(), mean.begin(), testvalue.begin(), std::minus<double>());
         test.push_back(testvalue);
-        vector<vector<double> > omega = getEigenspace(U, test, 1, 320, 190);
+        vector<vector<double> > omega = getEigenspace(U, test, 1, 320, kValue);
 
         set<pair<double, int >> topN;
         set<pair<double, int> >::iterator it;
@@ -152,23 +162,19 @@ int training() {
     /*writeImages(mean);
     vitualization(UT);
     writeImages(UT);*/
-    int kValue;
-    double eigenSum = 0;
-    double totalEigenSum = 0;
-    for (int i = 0; i < sample_size; i++) {
-        totalEigenSum += U[i][i];
-    }
 
-    for (int i = 0; i < sample_size; i++) {
-        if ((eigenSum/totalEigenSum) > 0.9) {
-            kValue = i-1;
-            break;
-        } else {
-            eigenSum += U[i][i];
-        }
-    }
+    int kValue = computeKVal(sample_size, w, 0.8);
 
-    vector<vector<double> > eigespace = getEigenspace(U, A, sample_size, image_size, kValue);
-    testing(mean, eigespace, w, U);
+    vector<vector<double> > eigespace = getEigenspace(U, A, sample_size, image_size, sample_size);
+
+    createTrainingDir();
+
+    writeMean(mean);
+    writeOmega(eigespace);
+    writeLambda(w);
+    writeEigenface(U);
+
+    testing(mean, eigespace, w, U, kValue);
+
     return 0;
 }
