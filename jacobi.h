@@ -9,7 +9,7 @@
 using namespace std;
 typedef unsigned dimension;
 
-int jacobi2(vector<vector<double>> zas, dimension n, vector<double> &w, vector<vector<double>> &V);
+int jacobi(vector<vector<double>> zas, dimension n, vector<double> &w, vector<vector<double>> &V);
 //void jacobi_set_max_iterations
 
 #endif //DIMENRED_JACOBI_H

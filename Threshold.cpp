@@ -6,15 +6,20 @@
 #include "bits/stdc++.h"
 #include "matrixOperations.h"
 #include "matrixfunctions.h"
+
 using namespace std;
 using namespace std::chrono;
 
 int training();
+
 int testing(vector<double> mean, vector<vector<double> > eigespace, vector<double> w,
             vector<vector<double> > U);
+int testing();
+
 
 int main(int argc, char *argv[]) {
-    training();
+     testing();
+    //training();
     return 0;
 }
 
@@ -35,6 +40,23 @@ int testing(vector<double> mean, vector<vector<double> > eigespace, vector<doubl
     int iop = 0;
 
     int TP = 0, TN = 0;
+    int kValue;
+    double eigenSum = 0;
+    double totalEigenSum = 0;
+    for (int i = 0; i < image_size; i++) {
+        totalEigenSum += w[i];
+    }
+
+    for (int i = 0; i < image_size; i++) {
+        eigenSum += w[i];
+        if ((eigenSum/totalEigenSum) > 0.9) {
+            kValue = i-1;
+            break;
+        }
+    }
+    cout <<kValue<< endl;
+    cout << galery_size << endl;
+    cout << image_size << endl;
 
     for (vector<double> X : testImages) {
 //        vector<double> X = getReferenceImageMatrix("fb_l/00019_940422_fb.pgm");
@@ -43,7 +65,7 @@ int testing(vector<double> mean, vector<vector<double> > eigespace, vector<doubl
         testvalue.resize(X.size());
         std::transform(X.begin(), X.end(), mean.begin(), testvalue.begin(), std::minus<double>());
         test.push_back(testvalue);
-        vector<vector<double> > omega = getEigenspace(U, test, 1, 320, 190);
+        vector<vector<double> > omega = getEigenspace(U, test, 1, 320, kValue);
 
         set<pair<double, int >> topN;
         set<pair<double, int> >::iterator it;
@@ -54,7 +76,7 @@ int testing(vector<double> mean, vector<vector<double> > eigespace, vector<doubl
 
         for (int i = 0; i < galery_size; i++) {
             double Mahalanobis_distance = 0;
-            for (int j = 0; j < image_size; j++) {
+            for (int j = 0; j < kValue; j++) {
                 Mahalanobis_distance = pow(eigespace[i][j] - omega[0][j], 2) / w[i + 1];
             }
 
@@ -96,28 +118,120 @@ int testing(vector<double> mean, vector<vector<double> > eigespace, vector<doubl
     return 0;
 }
 
+int testing() {
+    vector<double> mean=readResults("mean.csv")[0];
+    vector<vector<double> > eigespace=readResults("eigespace.csv");
+    vector<double> w=readResults("eigenvalues.csv")[0];
+    vector<vector<double> > U=readResults("eigenvectors.csv");
+    vector<string> file_list = listFile("fa_L");
+    vector<string> file_list2 = listFile("fb_L");
+    std::transform(file_list2.begin(), file_list2.end(), file_list2.begin(), findimageId<string>());
+    std::transform(file_list.begin(), file_list.end(), file_list.begin(), findimageId<string>());
+
+    vector<vector<double>> testImages = getX("fb_L");
+    int test_size=testImages.size();
+    int image_size = mean.size();
+    int galery_size = eigespace.size();
+
+
+    int iop = 0;
+
+    int TP = 0, TN = 0;
+
+    int kValue;
+    double eigenSum = 0;
+    double totalEigenSum = 0;
+    for (int i = 0; i < image_size; i++) {
+        totalEigenSum += w[i];
+    }
+
+    for (int i = 0; i < image_size; i++) {
+        eigenSum += w[i];
+        if ((eigenSum/totalEigenSum) > 0.9) {
+            kValue = i-1;
+            break;
+        }
+    }
+   // kValue=1000;
+    cout <<kValue<< endl;
+    cout << galery_size << endl;
+    cout << image_size << endl;
+    cout << test_size << endl;
+
+
+    for (vector<double> X : testImages) {
+//        vector<double> X = getReferenceImageMatrix("fb_l/00019_940422_fb.pgm");
+        vector<vector<double> > test;
+        vector<double> testvalue;
+        testvalue.resize(X.size());
+        std::transform(X.begin(), X.end(), mean.begin(), testvalue.begin(), std::minus<double>());
+        test.push_back(testvalue);
+        vector<vector<double> > omega = getEigenspace(U, test, 1, image_size, kValue);
+
+        set<pair<double, int >> topN;
+        set<pair<double, int> >::iterator it;
+        int N = 50;
+        pair<double, int> min_dis = {999999, 0};
+
+        for (int i = 0; i < galery_size; i++) {
+            double Mahalanobis_distance = 0;
+            for (int j = 0; j < kValue; j++) {
+                Mahalanobis_distance = pow(eigespace[i][j] - omega[0][j], 2) / w[i + 1];
+            }
+
+            if (topN.size() >= N) {
+                it = prev(topN.end());
+                if ((*it).first > Mahalanobis_distance) {
+                    topN.erase(it);
+                    min_dis = {Mahalanobis_distance, i};
+                    topN.insert(min_dis);
+                } else
+                    min_dis = (*it);
+            } else {
+                min_dis = {Mahalanobis_distance, i};
+                topN.insert(min_dis);
+            }
+
+            /*if (min_dis.first > Mahalanobis_distance)
+            { min_dis = { Mahalanobis_distance,i};
+            }*/
+
+        }
+
+        for (auto itm = topN.begin(); itm != topN.end(); ++itm) {
+            //cout << (*itm).first << " ";
+
+            if (file_list[(*itm).second] == file_list2[iop]) {
+                TP++;
+                continue;
+            }
+
+        }
+        //cout << min_dis.first + 1 << " with " << min_dis.second << endl;
+
+        //cout << file_list[min_dis.first] << " <> " << file_list2[iop] << endl;
+        iop++;
+    }
+    cout << "TP : " << TP << " accuracy ratio : " << (double)TP/test_size << endl;
+    return 0;
+}
+
 int training() {
+
     vector<vector<double>> images = getX("fa_L");
     int sample_size = images.size();
-    cout << sample_size;
+    cout << sample_size<<endl;
 
-    //displayMatrix(images);
-    //get Mean
     vector<double> mean = getMean(images, sample_size);
     int image_size = mean.size();
-    cout << image_size;
-    //displayMatrix(mean);
-    // get A
+    cout << image_size<<endl;
+
     vector<vector<double>> A;
     for (vector<double> samples :  images) {
         std::transform(samples.begin(), samples.end(), mean.begin(), samples.begin(), std::minus<double>());
         A.push_back(samples);
     }
-    //displayMatrix(A);
-// get coviance
     vector<vector<double> > mul = getCovairiance(A, sample_size, image_size);
-    //displayMatrix(mul);
-    //cout << endl << sample_size << endl;
     vector<double> w;
     vector<vector<double>> V;
     int adj_size = sample_size + 1;
@@ -125,36 +239,32 @@ int training() {
     V.resize(adj_size);
     for (int i = 1; i <= sample_size; i++)
         V[i].resize(adj_size);
+
     auto start = high_resolution_clock::now();
-    // Call the function, here sort()sort(values.begin(), values.end());
-    jacobi2(mul, sample_size, w, V);
-    // Get ending timepoint
+    jacobi(mul, sample_size, w, V);
     auto stop = high_resolution_clock::now();
-    // Get duration. Substart timepoints to
-    // get durarion. To cast it to proper unit
-    // use duration cast method
-    auto duration = duration_cast<microseconds>(stop - start);
+    auto duration = duration_cast<seconds>(stop - start);
     cout << "Time taken by function: "
-         << duration.count() << " microseconds" << endl;
-    //displayMatrix(w);
-    //displayMatrix(V);
+         << duration.count() << " seconds" << endl;
+
     vector<vector<double>> U = getrealEigenVectors(A, V, sample_size, image_size);
-    //displayMatrix(realEigenVectors);
-    // int Kvalue = image_size;
     vector<vector<double> > UT(U[0].size(), vector<double>());
     for (int i = 0; i < U.size(); i++) {
         for (int j = 0; j < U[i].size(); j++) {
             UT[j].push_back(U[i][j]);
         }
     }
-    // //displayMatrix(U);
-    cout << UT.size() << " " << UT[0].size() << endl;
-    //displayMatrix(eigenfaces);
+    vector<vector<double> > eigespace = getEigenspace(U, A, sample_size, image_size, sample_size);
+   // testing(mean, eigespace, w, U);
+
+    writeResults(U,"eigenvectors.csv");
+    writeResults(eigespace,"eigespace.csv");
+    writeResults(mean,"mean.csv");
+    writeResults(w,"eigenvalues.csv");
     /*writeImages(mean);
     vitualization(UT);
     writeImages(UT);*/
-    int Kvalue = 190;
-    vector<vector<double> > eigespace = getEigenspace(U, A, sample_size, image_size, Kvalue);
-    testing(mean, eigespace, w, U);
     return 0;
 }
+
+

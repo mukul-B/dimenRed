@@ -13,6 +13,9 @@ void writeImages(vector<vector<double>> eigenfaces);
 void writeImages(vector<double> meanfaces);
 void displayMatrix(vector<double> vector);
 void displayMatrix(vector<vector<double>> matrix);
+void writeResults(vector<vector<double>> vector,string file_name);
+void writeResults(vector<double> eigenvalue,string file_name);
 
+vector<vector<double>> readResults(string file_name);
 
 #endif //DIMENRED_MATRIXFUNCTIONS_H

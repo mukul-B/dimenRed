@@ -90,9 +90,9 @@ vector<vector<double>> getX(string direc) {
     for (string fn :  file_list) {
         vector<double> ref_image = getReferenceImageMatrix(fn);
         images.push_back(ref_image);
-        k--;
+       /* k--;
         if (k < 0)
-            break;
+            break;*/
     }
     return images;
 }
@@ -145,5 +145,49 @@ void displayMatrix(vector<double> vector) {
     cout << " \n";
 }
 
+
+
+vector<vector<double>> readResults(string file_name) {
+    fstream fin;
+    fin.open(file_name, ios::in);
+    vector<double> row;
+    vector<vector<double>> result;
+    string line,temp,word;
+
+    while (fin >> temp) {
+        row.clear();
+        getline(fin, line);
+        stringstream s(temp);
+        while (getline(s, word, ',')) {
+            row.push_back(stod(word));
+        }
+        result.push_back(row);
+    }
+    return result;
+}
+
+void writeResults(vector<vector<double>> eigenvectors,string file_name) {
+    ofstream myfile(file_name);
+    if (myfile.is_open()) {
+        for (vector<double> eg : eigenvectors) {
+            for (double e : eg) {
+                myfile <<e<<",";
+            }
+            myfile<<endl;
+        }
+        myfile.close();
+    }
+}
+void writeResults(vector<double> eigenvalue,string file_name) {
+    ofstream myfile(file_name);
+    if (myfile.is_open()) {
+
+        for (double e : eigenvalue) {
+            myfile <<e<<",";
+        }
+
+        myfile.close();
+    }
+}
 
 

@@ -12,7 +12,7 @@ typedef unsigned iterations;
 /* Maximum number of iterations allowed in jacobi() */
 static unsigned long jacobi_max_iterations = 500;
 
-int jacobi2(vector<vector<double>> zas, dimension n, vector<double> &w, vector<vector<double>> &V) {
+int jacobi(vector<vector<double>> zas, dimension n, vector<double> &w, vector<vector<double>> &V) {
     iterations i, j, k, iq, ip;
     double tresh, theta, tau, t, sm, s, h, g, c;
     double p;
