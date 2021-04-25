@@ -19,4 +19,9 @@ getEigenspace(vector<vector<double>> U, vector<vector<double>> X, int sample_siz
 
 void vitualization(vector<vector<double>> &A);
 
+vector<vector<double>> transpose(vector<vector<double>> A);
+
+vector<vector<double> >
+matrixMultiply(vector<vector<double>> U, vector<vector<double>> X, pair<int, int> dimen1,pair<int, int> dimen2);
+
 #endif //DIMENRED_MATRIXOPERATIONS_H

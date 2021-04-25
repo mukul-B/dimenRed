@@ -32,8 +32,8 @@ vector<double> getReferenceImageMatrix(string sample_file) {
     ImageType Simage(SN, SM, SQ);
     // read image
     readImage(sample_file, Simage);
-    /*SM = 2;
-    SN = 2;*/
+ /*   SM = 10;
+    SN = 10;*/
     // cout << SN<<","<< SM<<endl;
     vector<double> ref;
     for (int i = 0; i < SN; i++)
@@ -86,11 +86,11 @@ vector<string> listFile(string direc) {
 vector<vector<double>> getX(string direc) {
     vector<vector<double>> images;
     vector<string> file_list = listFile(direc);
-    int k = 399;
+    int k = 400;
     for (string fn :  file_list) {
         vector<double> ref_image = getReferenceImageMatrix(fn);
         images.push_back(ref_image);
-       /* k--;
+        /*k--;
         if (k < 0)
             break;*/
     }

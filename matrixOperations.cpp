@@ -66,6 +66,7 @@ void normalize(vector<vector<double>> &A) {
                   [length](vector<double> (&row)) {
                       std::transform(std::begin(row), std::end(row), std::begin(length), std::begin(row),
                                      Normalize<double>());
+
                   });
 }
 
@@ -129,4 +130,34 @@ getEigenspace(vector<vector<double>> U, vector<vector<double>> X, int sample_siz
         }
     }
     return mul;
+}
+
+vector<vector<double>>
+transpose(vector<vector<double>> A) {
+    vector<vector<double> > AT(A[0].size(), vector<double>());
+
+    for (int i = 0; i < A.size(); i++) {
+        for (int j = 0; j < A[i].size(); j++) {
+            AT[j].push_back(A[i][j]);
+        }
+    }
+    return AT;
+}
+
+vector<vector<double> >
+matrixMultiply(vector<vector<double>> U, vector<vector<double>> X, pair<int, int> dimen1,pair<int, int> dimen2) {
+
+    vector<vector<double> > mat;
+    mat.resize(dimen1.first);
+    for (int i = 0; i < dimen1.first; i++) {
+        mat[i].resize(dimen2.second);
+        for (int j = 0; j < dimen2.second; j++) {
+            mat[i][j] = 0;
+            for (int k = 0; k < dimen2.first; k++) {
+                mat[i][j] += U[i][k]
+                             * (X[k][j]);
+            }
+        }
+    }
+    return mat;
 }
