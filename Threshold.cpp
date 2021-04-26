@@ -23,10 +23,18 @@ int testing(vector<double> mean, vector<vector<double> > eigespace, vector<doubl
 
 int testing(string train_dir, string test_dir, string resolution);
 
+
+int testing_intruder(vector<double> mean, vector<vector<double> > eigespace, vector<double> w,
+                     vector<vector<double> > U,string train_dir, string test_dir, double thresh);
+
 int reconstructionCheck(string train_dir, string test_dir);
 
 int main(int argc, char *argv[]) {
-   /* int prob;
+    string training_folder,testing_folder,resolution;
+
+    int high_low_resolution = lowReso;
+    int training_testing = trainPhase;
+   int prob;
 
     printf("Programing Assignment 2:  question 3\n");
     printf("------------------------------------------\n");
@@ -38,11 +46,12 @@ int main(int argc, char *argv[]) {
     printf(" Please enter an option from the main menu: ");
 
     fflush(stdin);
-    cin >> prob;*/
-    string training_folder,testing_folder,resolution;
+    cin >> prob;
 
-    int high_low_resolution = highReso;
-    int training_testing = testPhase;
+    if(prob==1 || prob==2)
+         high_low_resolution = highReso;
+    if(prob==2 || prob==4)
+          training_testing = testPhase;
 
     if(high_low_resolution==lowReso){
         training_folder = "fa_L";
@@ -171,6 +180,11 @@ int testing(string train_dir, string test_dir, string resolution) {
     for(int rank=1;rank<=51;rank+=5)
         testing(mean, eigespace, w,U,train_dir,  test_dir,0.95,rank);
 */
+
+    /*for(double t = 0.2; t <= 0.4; t += 0.1) {
+        //cout << "GOING INTO ACTUAL TEST" << endl;
+        testing_intruder(mean, eigespace, w,U,train_dir,  test_dir, t);
+    }*/
     return 0;
 }
 
@@ -249,5 +263,72 @@ int reconstructionCheck(string train_dir, string test_dir) {
         Mahalanobis_distance += pow(X[j] - recon[j], 2);
     }
     cout << Mahalanobis_distance;
+    return 0;
+}
+
+int testing_intruder(vector<double> mean, vector<vector<double> > eigespace, vector<double> w,
+            vector<vector<double> > U,string train_dir, string test_dir, double thresh) {
+
+    vector<string> train_file_list = listFile(train_dir);
+    vector<string> test_file_list = listFile(test_dir);
+    std::transform(test_file_list.begin(), test_file_list.end(), test_file_list.begin(), findimageId<string>());
+    std::transform(train_file_list.begin(), train_file_list.end(), train_file_list.begin(), findimageId<string>());
+
+    vector<vector<double>> testImages = getX(test_dir);
+
+    int test_size = testImages.size();
+    int image_size = mean.size();
+    int galery_size = eigespace.size();
+    int iop = 0;
+    int correctCount = 0;
+    int kValue=0;
+    double eigenSum = 0;
+    double totalEigenSum = 0;
+    for (int i = 0; i < galery_size; i++) {
+        totalEigenSum += w[i+1];
+    }
+    for (int i = 0; i < galery_size; i++) {
+        eigenSum += w[i];
+        if ((eigenSum / totalEigenSum) > 0.95) {
+            kValue = i - 1;
+            break;
+        }
+    }
+    int TP = 0, FP = 0;
+    double largest_dis = 0, smallest_dis = 0;
+    for (vector<double> X : testImages) {
+        vector<vector<double> > test;
+        vector<double> testvalue;
+        testvalue.resize(X.size());
+        std::transform(X.begin(), X.end(), mean.begin(), testvalue.begin(), std::minus<double>());
+        test.push_back(testvalue);
+        vector<vector<double> > omega = getEigenspace(U, test, 1, image_size, kValue);
+        pair<double, int> min_dis = {999999, 0};
+        for (int i = 0; i < galery_size; i++) {
+            double Mahalanobis_distance = 0;
+            for (int j = 0; j < kValue; j++) {
+                Mahalanobis_distance += pow(eigespace[i][j] - omega[0][j], 2) / w[j + 1];
+            }
+            if (min_dis.first > Mahalanobis_distance) {
+                min_dis = {Mahalanobis_distance, i};
+            }
+
+            if (largest_dis < Mahalanobis_distance) {
+                largest_dis = Mahalanobis_distance;
+            }
+        }
+        smallest_dis = min_dis.first;
+
+        if (min_dis.first < thresh*1391.07) {
+            if( (stod(test_file_list[iop]) < 146) ) {
+                FP++;
+            } else {
+                TP++;
+            }
+        }
+
+        iop++;
+    }
+    cout  << thresh << ": " << (double) FP/85 << ", " << (double) TP/1119 <<endl;
     return 0;
 }
