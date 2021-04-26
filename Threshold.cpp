@@ -141,6 +141,7 @@ int testing(vector<double> mean, vector<vector<double> > eigespace, vector<doubl
     for (int i = 0; i < galery_size; i++) {
         eigenSum += w[i];
         if ((eigenSum / totalEigenSum) > 0.95) {
+            //cout << (eigenSum/totalEigenSum) << endl;
             kValue = i - 1;
             break;
         }
@@ -207,7 +208,7 @@ int testing(vector<double> mean, vector<vector<double> > eigespace, vector<doubl
     //cout << "GOING INTO OUTPUT OF DATA" << endl;
     //cout << smallest_dis << "," << largest_dis << endl;
 
-    cout  << thresh << ": " << (double) TP/1154 << ", " << (double) FP/85 <<endl;
+    cout  << thresh << ": " << (double) FP/85 << ", " << (double) TP/1119 <<endl;
     return 0;
 }
 
@@ -217,7 +218,13 @@ int testing(string train_dir, string test_dir) {
     vector<double> w = readResults("eigenvalues2.csv")[0];
     vector<vector<double> > U = readResults("eigenvectors2.csv");
 
-    for(double t = 0.005; t < 1; t *= 2) {
+    /*for(double t = 0; t <= 0.1; t += 0.01) {
+        //cout << "GOING INTO ACTUAL TEST" << endl;
+        testing(mean, eigespace, w,U,train_dir,  test_dir, t);
+    }*/
+    testing(mean, eigespace, w,U,train_dir,  test_dir, 0.125);
+    testing(mean, eigespace, w,U,train_dir,  test_dir, 0.15);
+    for(double t = 0.2; t <= 0.4; t += 0.1) {
         //cout << "GOING INTO ACTUAL TEST" << endl;
         testing(mean, eigespace, w,U,train_dir,  test_dir, t);
     }
