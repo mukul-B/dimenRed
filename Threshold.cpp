@@ -159,13 +159,9 @@ int testing(string train_dir, string test_dir, string resolution) {
     vector<vector<double> > eigespace = readResults(resolution+"eigespace.csv");
     vector<double> w = readResults(resolution+"eigenvalues.csv")[0];
     vector<vector<double> > U = readResults(resolution+"eigenvectors.csv");
-    /*vector<double> mean = readResults("mean2.csv")[0];
-    vector<vector<double> > eigespace = readResults("eigespace2.csv");
-    vector<double> w = readResults("eigenvalues2.csv")[0];
-    vector<vector<double> > U = readResults("eigenvectors2.csv");*/
-   // testing(mean, eigespace, w, U, train_dir, test_dir, 0.8, 1, true);
 
-   cout << 0.8 <<endl;
+    testing(mean, eigespace, w, U, train_dir, test_dir, 0.8, 1, true);
+   /*cout << 0.8 <<endl;
     for(int rank=1;rank<=51;rank+=5)
     testing(mean, eigespace, w,U,train_dir,  test_dir,0.8,rank);
     cout << 0.9 <<endl;
@@ -174,7 +170,7 @@ int testing(string train_dir, string test_dir, string resolution) {
     cout << 0.95 <<endl;
     for(int rank=1;rank<=51;rank+=5)
         testing(mean, eigespace, w,U,train_dir,  test_dir,0.95,rank);
-
+*/
     return 0;
 }
 
