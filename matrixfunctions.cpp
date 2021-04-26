@@ -8,19 +8,47 @@
 using namespace std;
 
 void readImageHeader(string, int &, int &, int &, bool &);
+
 void readImage(string, ImageType &);
+
 void writeImage(string, ImageType &);
 
-void writeImages(vector<double> meanfaces) {
+void writeImages(vector<double> meanfaces, string resolution) {
+
     int N = 20, M = 16;
+    if (resolution == "H") {
+        N = 60;
+        M = 48;
+    }
     ImageType image(N, M, 255);
     for (int i = 0; i < N; i++)
         for (int j = 0; j < M; j++) {
             image.setPixelVal(i, j, meanfaces[i * M + j]);
         }
-    string filename = string("meanface/") + string("meanface.pgm");
+    string filename =string(resolution) + string("meanface/") +  string("meanface.pgm");
     writeImage(filename, image);
 
+}
+
+void writeImages(vector<vector<double>> eigenfaces, string resolution) {
+    int N = 20, M = 16;
+    if (resolution == "H") {
+        N = 60;
+        M = 48;
+    }
+    int fcno = 0;
+    for (vector<double> eg : eigenfaces) {
+        fcno++;
+        ImageType image(N, M, 255);
+        for (int i = 0; i < N; i++) {
+
+            for (int j = 0; j < M; j++) {
+                image.setPixelVal(i, j, eg[i * M + j]);
+            }
+        }
+        string filename = string(resolution) +string("eigenfaces/") + to_string(fcno) + string("eigenfaces.pgm");
+        writeImage(filename, image);
+    }
 }
 
 vector<double> getReferenceImageMatrix(string sample_file) {
@@ -32,8 +60,8 @@ vector<double> getReferenceImageMatrix(string sample_file) {
     ImageType Simage(SN, SM, SQ);
     // read image
     readImage(sample_file, Simage);
- /*   SM = 10;
-    SN = 10;*/
+    /*   SM = 10;
+       SN = 10;*/
     // cout << SN<<","<< SM<<endl;
     vector<double> ref;
     for (int i = 0; i < SN; i++)
@@ -43,22 +71,7 @@ vector<double> getReferenceImageMatrix(string sample_file) {
         }
     return ref;
 }
-void writeImages(vector<vector<double>> eigenfaces) {
-    int N = 20, M = 16;
-    int fcno = 0;
-    for (vector<double> eg : eigenfaces) {
-        fcno++;
-        ImageType image(N, M, 255);
-        for (int i = 0; i < N; i++) {
 
-            for (int j = 0; j < M; j++) {
-                image.setPixelVal(i, j, eg[i * M + j]);
-            }
-        }
-        string filename = string("eigenfaces/") + to_string(fcno) + string("eigenfacesC.pgm");
-        writeImage(filename, image);
-    }
-}
 vector<string> listFile(string direc) {
     ifstream inn;
     DIR *pDIR;
@@ -146,13 +159,12 @@ void displayMatrix(vector<double> vector) {
 }
 
 
-
 vector<vector<double>> readResults(string file_name) {
     fstream fin;
     fin.open(file_name, ios::in);
     vector<double> row;
     vector<vector<double>> result;
-    string line,temp,word;
+    string line, temp, word;
 
     while (fin >> temp) {
         row.clear();
@@ -166,24 +178,25 @@ vector<vector<double>> readResults(string file_name) {
     return result;
 }
 
-void writeResults(vector<vector<double>> eigenvectors,string file_name) {
+void writeResults(vector<vector<double>> eigenvectors, string file_name) {
     ofstream myfile(file_name);
     if (myfile.is_open()) {
         for (vector<double> eg : eigenvectors) {
             for (double e : eg) {
-                myfile <<e<<",";
+                myfile << e << ",";
             }
-            myfile<<endl;
+            myfile << endl;
         }
         myfile.close();
     }
 }
-void writeResults(vector<double> eigenvalue,string file_name) {
+
+void writeResults(vector<double> eigenvalue, string file_name) {
     ofstream myfile(file_name);
     if (myfile.is_open()) {
 
         for (double e : eigenvalue) {
-            myfile <<e<<",";
+            myfile << e << ",";
         }
 
         myfile.close();

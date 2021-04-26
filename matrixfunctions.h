@@ -9,8 +9,8 @@ vector<vector<double>> getX(string direc);
 vector<double> getReferenceImageMatrix(string sample_file);
 vector<string> listFile(string);
 
-void writeImages(vector<vector<double>> eigenfaces);
-void writeImages(vector<double> meanfaces);
+void writeImages(vector<vector<double>> eigenfaces, string resolution);
+void writeImages(vector<double> meanfaces, string resolution);
 void displayMatrix(vector<double> vector);
 void displayMatrix(vector<vector<double>> matrix);
 void writeResults(vector<vector<double>> vector,string file_name);
